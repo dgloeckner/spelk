@@ -38,7 +38,10 @@ Update metrics.properties in [spark home]/conf/metrics.properties eg.
 	#   units     seconds       polling period units
 	*.sink.elk.host=localhost
 	*.sink.elk.port=9200
-	*.sink.elk.index=spark
+	*.sink.elk.index=spark`
 	*.sink.elk.period=10
 	*.sink.elk.unit=seconds
 .
+**Run Elasticsearch for testing**
+
+`docker run -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" docker.elastic.co/elasticsearch/elasticsearch:7.4.1

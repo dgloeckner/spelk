@@ -296,7 +296,7 @@ public class ElasticsearchListener extends SparkListener {
 			jsonGenerator.writeStringField("executorId", executorId);
 			jsonGenerator.writeFieldName(name);
 			JValue v = JsonProtocol.sparkEventToJson(event);
-			Utils.writeJValue(jsonGenerator, v);
+			//Utils.writeJValue(jsonGenerator, v);
 
 			jsonGenerator.writeEndObject();
 
