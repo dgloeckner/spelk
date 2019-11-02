@@ -1,6 +1,6 @@
 /*
- * Copyright 2016 IBM Corp.
- * 
+ * This class was modified so the IBM copyright was removed.
+ *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,22 +19,6 @@
 
 package com.ibm.spark.elk.metrics.reporter;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.SortedMap;
-import java.util.concurrent.TimeUnit;
-
-import org.apache.spark.SparkConf;
-import org.apache.spark.SparkEnv;
-import org.apache.spark.util.Utils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.codahale.metrics.Clock;
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Gauge;
@@ -48,7 +32,26 @@ import com.codahale.metrics.Timer;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ibm.spark.elk.ElasticsearchConnector;
+import java.io.IOException;
+import java.io.StringWriter;
+import java.lang.management.ManagementFactory;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.SortedMap;
+import java.util.concurrent.TimeUnit;
+import org.apache.http.HttpStatus;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPut;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.spark.SparkConf;
+import org.apache.spark.SparkEnv;
+import org.apache.spark.util.Utils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @SuppressWarnings("rawtypes")
 
@@ -58,111 +61,143 @@ public class ElasticsearchReporter extends ScheduledReporter {
 
 	private final Clock clock;
 	private final String timestampField;
-
-	private final String timeStampString = "YYYY-MM-dd'T'HH:mm:ss.SSSZ";
-	private SimpleDateFormat timestampFormat;
+	private final CloseableHttpClient httpClient;
+	private final String indexNamePattern;
+	private final String mainClass;
+	private final String processId;
+	private final SimpleDateFormat timestampFormat;
+	private final String baseUrl;
 
 	private String localhost;
-	private String appName = null;
-	private String appId = null;
-	private String executorId = null;
-	private boolean indexInitialized = false;
+	private String appName;
+	private String appId;
+	private String executorId;
 
-	private ElasticsearchConnector connector;
-	private JsonFactory jsonFactory;
+	private final JsonFactory jsonFactory;
 
 	private ElasticsearchReporter(MetricRegistry registry, MetricFilter filter, TimeUnit rateUnit,
-			TimeUnit durationUnit, String host, String port, String indexName, String timestampField) {
-
+			TimeUnit durationUnit, String host, String port, String indexNamePattern,
+			String timestampField) {
 		super(registry, "elasticsearch-reporter", filter, rateUnit, durationUnit);
-
 		this.clock = Clock.defaultClock();
-		this.connector = new ElasticsearchConnector(host, port, indexName);
+		this.httpClient = HttpClients.createDefault();
+		this.baseUrl = "http://" + host + ":" + port + "/";
 		this.timestampField = timestampField;
-		this.timestampFormat = new SimpleDateFormat(timeStampString);
-		this.localhost = Utils.localHostName();
+		this.timestampFormat = new SimpleDateFormat("YYYY-MM-dd'T'HH:mm:ss.SSSZ");
+		this.localhost = Utils.localCanonicalHostName();
+		this.indexNamePattern = indexNamePattern;
+		this.mainClass = getJavaMainClass();
+		this.processId = ManagementFactory.getRuntimeMXBean().getName();
+		this.jsonFactory = new JsonFactory();
+	}
 
-		jsonFactory = new JsonFactory();
-
-		indexInitialized = connector.addDefaultMappings();
-		if (!indexInitialized) {
-			LOGGER.warn("Failed to initialize Elasticsearch index '" + indexName + "' on " + host + ":" + port);
+	@Override
+	public void close() {
+		super.close();
+		try {
+			this.httpClient.close();
+		} catch (IOException e) {
+			LOGGER.error("Error while closing http client", e);
 		}
 	}
 
 	@Override
 	public void report(SortedMap<String, Gauge> gauges, SortedMap<String, Counter> counters,
 			SortedMap<String, Histogram> histograms, SortedMap<String, Meter> meters, SortedMap<String, Timer> timers) {
-
-		if (!indexInitialized) {
-			return;
-		}
-
-		final long timestamp = clock.getTime();
-		String timestampString = timestampFormat.format(new Date(timestamp));
-
-		if (appName == null) {
-			SparkConf conf = SparkEnv.get().conf();
-			appName = conf.get("spark.app.name", "");
-			appId = conf.getAppId();
-			executorId = conf.get("spark.executor,id", null);
-		}
-
 		try {
-
-			HttpURLConnection connection = connector.getConnection("POST", "/_bulk");
-			if (connection == null) {
-				return;
+			final long timestamp = clock.getTime();
+			Date now = new Date(timestamp);
+			String timestampString = timestampFormat.format(now);
+			String indexName =
+					indexNamePattern.contains("%") ? String.format(indexNamePattern, now) : indexNamePattern;
+			String connectionUrl = baseUrl + indexName + "/";
+			initializeAppInfo();
+			String json = produceJsonFromMetrics(indexName, gauges, counters, histograms, meters, timers,
+					timestampString);
+			performBulkInsert(connectionUrl, json);
+			if (LOGGER.isDebugEnabled()) {
+				LOGGER.debug(json);
 			}
-
-			JsonGenerator jsonGenerator = jsonFactory.createGenerator(connection.getOutputStream());
-			ObjectMapper objectMapper = new ObjectMapper();
-			jsonGenerator.setCodec(objectMapper);
-
-			if (!gauges.isEmpty()) {
-				for (Map.Entry<String, Gauge> entry : gauges.entrySet()) {
-					reportGauge(jsonGenerator, entry, timestampString);
-				}
-			}
-
-			if (!counters.isEmpty()) {
-				for (Map.Entry<String, Counter> entry : counters.entrySet()) {
-					reportCounter(jsonGenerator, entry, timestampString);
-				}
-			}
-
-			if (!histograms.isEmpty()) {
-				for (Map.Entry<String, Histogram> entry : histograms.entrySet()) {
-					reportHistogram(jsonGenerator, entry, timestampString);
-				}
-			}
-
-			if (!meters.isEmpty()) {
-				for (Map.Entry<String, Meter> entry : meters.entrySet()) {
-					reportMeter(jsonGenerator, entry, timestampString);
-				}
-			}
-
-			if (!timers.isEmpty()) {
-				for (Map.Entry<String, Timer> entry : timers.entrySet()) {
-					reportTimer(jsonGenerator, entry, timestampString);
-				}
-			}
-
-			if (connector.endConnection(connection) != HttpURLConnection.HTTP_OK) {
-				LOGGER.warn("Failed to write metric to Elasticsearch");
-			}
-
-		} catch (IOException ioe) {
-			LOGGER.error("Exception posting to Elasticsearch index: " + ioe.toString());
+		} catch (Exception ex) {
+			LOGGER.error("Exception posting to Elasticsearch index", ex);
 		}
 
 	}
 
-	private void reportGauge(JsonGenerator jsonGenerator, Map.Entry<String, Gauge> entry, String timestampString) {
+	private String produceJsonFromMetrics(String indexName, SortedMap<String, Gauge> gauges,
+			SortedMap<String, Counter> counters, SortedMap<String, Histogram> histograms,
+			SortedMap<String, Meter> meters, SortedMap<String, Timer> timers, String timestampString)
+			throws IOException {
+		StringWriter stringWriter = new StringWriter();
+		JsonGenerator jsonGenerator = jsonFactory.createGenerator(stringWriter);
+		ObjectMapper objectMapper = new ObjectMapper();
+		jsonGenerator.setCodec(objectMapper);
+
+		if (!gauges.isEmpty()) {
+			for (Entry<String, Gauge> entry : gauges.entrySet()) {
+				reportGauge(indexName, jsonGenerator, entry, timestampString);
+			}
+		}
+
+		if (!counters.isEmpty()) {
+			for (Entry<String, Counter> entry : counters.entrySet()) {
+				reportCounter(indexName, jsonGenerator, entry, timestampString);
+			}
+		}
+
+		if (!histograms.isEmpty()) {
+			for (Entry<String, Histogram> entry : histograms.entrySet()) {
+				reportHistogram(indexName, jsonGenerator, entry, timestampString);
+			}
+		}
+
+		if (!meters.isEmpty()) {
+			for (Entry<String, Meter> entry : meters.entrySet()) {
+				reportMeter(indexName, jsonGenerator, entry, timestampString);
+			}
+		}
+
+		if (!timers.isEmpty()) {
+			for (Entry<String, Timer> entry : timers.entrySet()) {
+				reportTimer(indexName, jsonGenerator, entry, timestampString);
+			}
+		}
+		// Add final empty line to bulk request.
+		stringWriter.write('\n');
+		stringWriter.write('\n');
+
+		return stringWriter.getBuffer().toString();
+	}
+
+	private void initializeAppInfo() {
+		if (appName == null && SparkEnv.get() != null) {
+			SparkConf conf = SparkEnv.get().conf();
+			appName = conf.get("spark.app.name", "");
+			appId = conf.getAppId();
+			executorId = conf.get("spark.executor.id", null);
+		}
+	}
+
+	private void performBulkInsert(String connectionUrl, String json) throws IOException {
+		HttpPut put = new HttpPut(connectionUrl + "_bulk");
+		put.setHeader("Accept", "application/json");
+		put.setHeader("Content-type", "application/json");
+		put.setEntity(new StringEntity(json, "UTF-8"));
+		try (CloseableHttpResponse result = httpClient.execute(put)) {
+			if (HttpStatus.SC_OK != result.getStatusLine().getStatusCode()) {
+				LOGGER.warn("Failed to write metric to Elasticsearch to " + connectionUrl + " " + result
+						.getStatusLine() + " " + result.getStatusLine().getReasonPhrase());
+			} else {
+				LOGGER.debug("Request was posted.");
+			}
+		}
+	}
+
+	private void reportGauge(String indexName, JsonGenerator jsonGenerator,
+			Map.Entry<String, Gauge> entry, String timestampString) {
 		try {
 
-			writeStartMetric(entry.getKey(), jsonGenerator, timestampString);
+			writeStartMetric(entry.getKey(), indexName, jsonGenerator, timestampString);
 			jsonGenerator.writeObject((entry.getValue().getValue()));
 			writeEndMetric(jsonGenerator);
 
@@ -172,10 +207,11 @@ public class ElasticsearchReporter extends ScheduledReporter {
 
 	}
 
-	private void reportCounter(JsonGenerator jsonGenerator, Entry<String, Counter> entry, String timestampString) {
+	private void reportCounter(String indexName, JsonGenerator jsonGenerator,
+			Entry<String, Counter> entry, String timestampString) {
 		try {
 
-			writeStartMetric(entry.getKey(), jsonGenerator, timestampString);
+			writeStartMetric(entry.getKey(), indexName, jsonGenerator, timestampString);
 			jsonGenerator.writeNumber((entry.getValue().getCount()));
 			writeEndMetric(jsonGenerator);
 
@@ -185,9 +221,10 @@ public class ElasticsearchReporter extends ScheduledReporter {
 
 	}
 
-	private void reportHistogram(JsonGenerator jsonGenerator, Entry<String, Histogram> entry, String timestampString) {
+	private void reportHistogram(String indexName, JsonGenerator jsonGenerator,
+			Entry<String, Histogram> entry, String timestampString) {
 		try {
-			writeStartMetric(entry.getKey(), jsonGenerator, timestampString);
+			writeStartMetric(entry.getKey(), indexName, jsonGenerator, timestampString);
 			jsonGenerator.writeStartObject();
 			final Histogram histogram = entry.getValue();
 			final Snapshot snapshot = histogram.getSnapshot();
@@ -212,9 +249,10 @@ public class ElasticsearchReporter extends ScheduledReporter {
 
 	}
 
-	private void reportMeter(JsonGenerator jsonGenerator, Entry<String, Meter> entry, String timestampString) {
+	private void reportMeter(String indexName, JsonGenerator jsonGenerator,
+			Entry<String, Meter> entry, String timestampString) {
 		try {
-			writeStartMetric(entry.getKey(), jsonGenerator, timestampString);
+			writeStartMetric(entry.getKey(), indexName, jsonGenerator, timestampString);
 			jsonGenerator.writeStartObject();
 			final Meter meter = entry.getValue();
 			jsonGenerator.writeNumberField("count", meter.getCount());
@@ -228,12 +266,12 @@ public class ElasticsearchReporter extends ScheduledReporter {
 		} catch (IOException ioe) {
 			LOGGER.error("Exception writing metrics to Elasticsearch index: " + ioe.toString());
 		}
-
 	}
 
-	private void reportTimer(JsonGenerator jsonGenerator, Entry<String, Timer> entry, String timestampString) {
+	private void reportTimer(String indexName, JsonGenerator jsonGenerator,
+			Entry<String, Timer> entry, String timestampString) {
 		try {
-			writeStartMetric(entry.getKey(), jsonGenerator, timestampString);
+			writeStartMetric(entry.getKey(), indexName, jsonGenerator, timestampString);
 			jsonGenerator.writeStartObject();
 			final Timer timer = entry.getValue();
 			final Snapshot snapshot = timer.getSnapshot();
@@ -262,28 +300,20 @@ public class ElasticsearchReporter extends ScheduledReporter {
 
 	}
 
-	private String writeStartMetric(String name, JsonGenerator jsonGenerator, String timestampString)
+	private String writeStartMetric(String key, String indexName, JsonGenerator jsonGenerator,
+			String timestampString)
 			throws IOException {
-
-		// Parse name to extract application id etc
-		// The appid and executorId should be the same for all metrics so we can
-		// process just the first one
-		if (appId == null || executorId == null) {
-			String nameParts[] = name.split("\\.");
-			appId = nameParts[0];
-			executorId = nameParts[1];
-		}
-
-		final String metricName = (name.substring(appId.length() + executorId.length() + 2)).replace('.', '_');
+		// Strip appId from metric name.
+		String metricName = appId != null ? key.replace(appId + ".", "") : key;
 
 		// Write the Elasticsearch bulk header
 		jsonGenerator.writeStartObject();
 		jsonGenerator.writeObjectFieldStart("index");
-		jsonGenerator.writeStringField("_type", metricName);
+		jsonGenerator.writeStringField("_index", indexName);
 		jsonGenerator.writeEndObject();
 		jsonGenerator.writeEndObject();
 		jsonGenerator.flush();
-		((OutputStream) (jsonGenerator.getOutputTarget())).write("\n".getBytes());
+		jsonGenerator.writeRaw('\n');
 
 		// write standard fields
 		jsonGenerator.writeStartObject();
@@ -292,6 +322,8 @@ public class ElasticsearchReporter extends ScheduledReporter {
 		jsonGenerator.writeStringField("applicationName", appName);
 		jsonGenerator.writeStringField("applicationId", appId);
 		jsonGenerator.writeStringField("executorId", executorId);
+		jsonGenerator.writeStringField("javaMainClass", mainClass);
+		jsonGenerator.writeStringField("processId", processId);
 		jsonGenerator.writeFieldName(metricName);
 
 		return metricName;
@@ -301,7 +333,14 @@ public class ElasticsearchReporter extends ScheduledReporter {
 
 		jsonGenerator.writeEndObject();
 		jsonGenerator.flush();
-		((OutputStream) (jsonGenerator.getOutputTarget())).write("\n".getBytes());
+		jsonGenerator.writeRaw('\n');
+	}
+
+	private String getJavaMainClass() {
+		// might not be portable between JVMs :(
+		return System.getenv(System.getenv().keySet()
+				.stream()
+				.filter(k -> k.startsWith("JAVA_MAIN_CLASS")).findAny().orElse(""));
 	}
 
 	public static Builder forRegistry(MetricRegistry registry) {
