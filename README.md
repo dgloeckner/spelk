@@ -62,4 +62,8 @@ Update metrics.properties in [spark home]/conf/metrics.properties eg.
 .
 **Run Elasticsearch for testing**
 
-`docker run -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" docker.elastic.co/elasticsearch/elasticsearch:7.4.1
+`docker run -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" docker.elastic.co/elasticsearch/elasticsearch:7.4.1`
+
+**Run Kibana for testing**
+
+`docker run -e "ELASTICSEARCH_HOSTS=http://mbp:9200" -p 5601:5601 docker.elastic.co/kibana/kibana:7.4.2`
