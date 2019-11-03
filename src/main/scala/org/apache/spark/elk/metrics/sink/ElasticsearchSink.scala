@@ -32,6 +32,7 @@ class ElasticsearchSink(val properties: Properties, val registry: MetricRegistry
   // Property keys
   val ELASTICSEARCH_KEY_HOST = "host"
   val ELASTICSEARCH_KEY_PORT = "port"
+  val ELASTICSEARCH_KEY_PATH = "path"
   val ELASTICSEARCH_KEY_INDEX = "index"
   val ELASTICSEARCH_KEY_PERIOD = "period"
   val ELASTICSEARCH_KEY_UNIT = "unit"
@@ -40,6 +41,7 @@ class ElasticsearchSink(val properties: Properties, val registry: MetricRegistry
   val ELASTICSEARCH_DEFAULT_PERIOD = 10
   val ELASTICSEARCH_DEFAULT_UNIT = "SECONDS"
   val ELASTICSEARCH_DEFAULT_INDEX = "spark"
+  val ELASTICSEARCH_DEFAULT_PATH = ""
 
   // Host and port must be specified
   val host = properties.getProperty(ELASTICSEARCH_KEY_HOST)
@@ -52,6 +54,8 @@ class ElasticsearchSink(val properties: Properties, val registry: MetricRegistry
   }
 
   val index = properties.getProperty(ELASTICSEARCH_KEY_INDEX, ELASTICSEARCH_DEFAULT_INDEX)
+
+  val path = properties.getProperty(ELASTICSEARCH_KEY_PATH, ELASTICSEARCH_DEFAULT_PATH)
 
   val pollPeriod = Option(properties.getProperty(ELASTICSEARCH_KEY_PERIOD)) match {
     case Some(s) => s.toInt
@@ -69,6 +73,7 @@ class ElasticsearchSink(val properties: Properties, val registry: MetricRegistry
     .host(host)
     .port(port)
     .index(index)
+    .path(path)
     .build();
 
   override def start() {

@@ -59,6 +59,8 @@ Update metrics.properties in [spark home]/conf/metrics.properties eg.
 	*.sink.elk.index=spark-%tF
 	*.sink.elk.period=10
 	*.sink.elk.unit=seconds
+	# Optional path of Elasticsearch API ("http://host:port/path/...")
+	# *.sink.elk.path=test
 .
 **Run Elasticsearch for testing**
 

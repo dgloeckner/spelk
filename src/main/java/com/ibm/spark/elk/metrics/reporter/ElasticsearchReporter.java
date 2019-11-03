@@ -76,12 +76,12 @@ public class ElasticsearchReporter extends ScheduledReporter {
 	private final JsonFactory jsonFactory;
 
 	private ElasticsearchReporter(MetricRegistry registry, MetricFilter filter, TimeUnit rateUnit,
-			TimeUnit durationUnit, String host, String port, String indexNamePattern,
+			TimeUnit durationUnit, String host, String port, String path, String indexNamePattern,
 			String timestampField) {
 		super(registry, "elasticsearch-reporter", filter, rateUnit, durationUnit);
 		this.clock = Clock.defaultClock();
 		this.httpClient = HttpClients.createDefault();
-		this.baseUrl = "http://" + host + ":" + port + "/";
+		this.baseUrl = "http://" + host + ":" + port + "/" + (path.isEmpty() ? "" : path + "/");
 		this.timestampField = timestampField;
 		this.timestampFormat = new SimpleDateFormat("YYYY-MM-dd'T'HH:mm:ss.SSSZ");
 		this.localhost = Utils.localCanonicalHostName();
@@ -356,6 +356,7 @@ public class ElasticsearchReporter extends ScheduledReporter {
 		private String elasticsearchHost = "localhost";
 		private String elasticsearchPort = "9200";
 		private String elasticsearchIndex = "spark";
+		private String elasticsearchPath = "";
 		private String elasticsearchTimestampField = "timestamp";
 
 		private Builder(MetricRegistry registry) {
@@ -380,6 +381,11 @@ public class ElasticsearchReporter extends ScheduledReporter {
 			return this;
 		}
 
+		public Builder path(String path) {
+			this.elasticsearchPath = path;
+			return this;
+		}
+
 		public Builder timestampField(String timestampFieldName) {
 			this.elasticsearchTimestampField = timestampFieldName;
 			return this;
@@ -397,7 +403,7 @@ public class ElasticsearchReporter extends ScheduledReporter {
 
 		public ElasticsearchReporter build() {
 			return new ElasticsearchReporter(registry, filter, rateUnit, durationUnit, elasticsearchHost,
-					elasticsearchPort, elasticsearchIndex, elasticsearchTimestampField);
+					elasticsearchPort, elasticsearchPath, elasticsearchIndex, elasticsearchTimestampField);
 		}
 	}
 
