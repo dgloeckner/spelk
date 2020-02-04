@@ -75,3 +75,7 @@ Update metrics.properties in [spark home]/conf/metrics.properties eg.
 There's exported Kibana content which contains some visualizations and dashboards in
  `src/main/kibana/kibana-objects.ndjson`
  You may import this content into Kibana via `Settings -> Saved Objects -> Import`.
+ 
+ # REST interface for Elasticsearch index management
+ * Listing indexes: `curl http://localhost:9200/_cat/indices`
+ * Deleting an index by name: `curl -XDELETE http://localhost:9200/spark-2020-02-02`
