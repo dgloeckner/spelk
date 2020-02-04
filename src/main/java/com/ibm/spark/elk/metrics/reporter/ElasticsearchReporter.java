@@ -305,6 +305,10 @@ public class ElasticsearchReporter extends ScheduledReporter {
 			throws IOException {
 		// Strip appId from metric name.
 		String metricName = appId != null ? key.replace(appId + ".", "") : key;
+		// Remove executor numbers from metric name
+		metricName = metricName.replaceAll("[0-9]+\\.", "");
+		// Remove whitespace from metrics name
+		metricName = metricName.replaceAll("[]\\s]+", "");
 
 		// Write the Elasticsearch bulk header
 		jsonGenerator.writeStartObject();
@@ -322,7 +326,9 @@ public class ElasticsearchReporter extends ScheduledReporter {
 		jsonGenerator.writeStringField("applicationName", appName);
 		jsonGenerator.writeStringField("applicationId", appId);
 		jsonGenerator.writeStringField("executorId", executorId);
-		jsonGenerator.writeStringField("javaMainClass", mainClass);
+		if(mainClass!=null && !mainClass.isEmpty()) {
+			jsonGenerator.writeStringField("javaMainClass", mainClass);
+		}
 		jsonGenerator.writeStringField("processId", processId);
 		jsonGenerator.writeFieldName(metricName);
 
