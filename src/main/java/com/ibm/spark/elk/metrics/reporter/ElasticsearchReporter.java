@@ -234,11 +234,11 @@ public class ElasticsearchReporter extends ScheduledReporter {
 			jsonGenerator.writeNumberField("mean", convertDuration(snapshot.getMean()));
 			jsonGenerator.writeNumberField("stddev", convertDuration(snapshot.getStdDev()));
 			jsonGenerator.writeNumberField("median", convertDuration(snapshot.getMedian()));
-			jsonGenerator.writeNumberField("75th percentile", convertDuration(snapshot.get75thPercentile()));
-			jsonGenerator.writeNumberField("95th percentile", convertDuration(snapshot.get95thPercentile()));
-			jsonGenerator.writeNumberField("98th percentile", convertDuration(snapshot.get98thPercentile()));
-			jsonGenerator.writeNumberField("99th percentile", convertDuration(snapshot.get99thPercentile()));
-			jsonGenerator.writeNumberField("999th percentile", convertDuration(snapshot.get999thPercentile()));
+			jsonGenerator.writeNumberField("75th_percentile", convertDuration(snapshot.get75thPercentile()));
+			jsonGenerator.writeNumberField("95th_percentile", convertDuration(snapshot.get95thPercentile()));
+			jsonGenerator.writeNumberField("98th_percentile", convertDuration(snapshot.get98thPercentile()));
+			jsonGenerator.writeNumberField("99th_percentile", convertDuration(snapshot.get99thPercentile()));
+			jsonGenerator.writeNumberField("999th_percentile", convertDuration(snapshot.get999thPercentile()));
 
 			jsonGenerator.writeEndObject();
 			writeEndMetric(jsonGenerator);
@@ -256,10 +256,10 @@ public class ElasticsearchReporter extends ScheduledReporter {
 			jsonGenerator.writeStartObject();
 			final Meter meter = entry.getValue();
 			jsonGenerator.writeNumberField("count", meter.getCount());
-			jsonGenerator.writeNumberField("mean rate", convertRate(meter.getMeanRate()));
-			jsonGenerator.writeNumberField("1-minute rate", convertRate(meter.getOneMinuteRate()));
-			jsonGenerator.writeNumberField("5-minute rate", convertRate(meter.getFiveMinuteRate()));
-			jsonGenerator.writeNumberField("15-minute rate", convertRate(meter.getFifteenMinuteRate()));
+			jsonGenerator.writeNumberField("mean_rate", convertRate(meter.getMeanRate()));
+			jsonGenerator.writeNumberField("1-minute_rate", convertRate(meter.getOneMinuteRate()));
+			jsonGenerator.writeNumberField("5-minute_rate", convertRate(meter.getFiveMinuteRate()));
+			jsonGenerator.writeNumberField("15-minute_rate", convertRate(meter.getFifteenMinuteRate()));
 			jsonGenerator.writeEndObject();
 			writeEndMetric(jsonGenerator);
 
@@ -276,20 +276,20 @@ public class ElasticsearchReporter extends ScheduledReporter {
 			final Timer timer = entry.getValue();
 			final Snapshot snapshot = timer.getSnapshot();
 			jsonGenerator.writeNumberField("count", timer.getCount());
-			jsonGenerator.writeNumberField("mean rate", convertRate(timer.getMeanRate()));
-			jsonGenerator.writeNumberField("1-minute rate", convertRate(timer.getOneMinuteRate()));
-			jsonGenerator.writeNumberField("5-minute rate", convertRate(timer.getFiveMinuteRate()));
-			jsonGenerator.writeNumberField("15-minute rate", convertRate(timer.getFifteenMinuteRate()));
+			jsonGenerator.writeNumberField("mean_rate", convertRate(timer.getMeanRate()));
+			jsonGenerator.writeNumberField("1-minute_rate", convertRate(timer.getOneMinuteRate()));
+			jsonGenerator.writeNumberField("5-minute_rate", convertRate(timer.getFiveMinuteRate()));
+			jsonGenerator.writeNumberField("15-minute_rate", convertRate(timer.getFifteenMinuteRate()));
 			jsonGenerator.writeNumberField("min", convertDuration(snapshot.getMin()));
 			jsonGenerator.writeNumberField("max", convertDuration(snapshot.getMax()));
 			jsonGenerator.writeNumberField("mean", convertDuration(snapshot.getMean()));
 			jsonGenerator.writeNumberField("stddev", convertDuration(snapshot.getStdDev()));
 			jsonGenerator.writeNumberField("median", convertDuration(snapshot.getMedian()));
-			jsonGenerator.writeNumberField("75th percentile", convertDuration(snapshot.get75thPercentile()));
-			jsonGenerator.writeNumberField("95th percentile", convertDuration(snapshot.get95thPercentile()));
-			jsonGenerator.writeNumberField("98th percentile", convertDuration(snapshot.get98thPercentile()));
-			jsonGenerator.writeNumberField("99th percentile", convertDuration(snapshot.get99thPercentile()));
-			jsonGenerator.writeNumberField("999th percentile", convertDuration(snapshot.get999thPercentile()));
+			jsonGenerator.writeNumberField("75th_percentile", convertDuration(snapshot.get75thPercentile()));
+			jsonGenerator.writeNumberField("95th_percentile", convertDuration(snapshot.get95thPercentile()));
+			jsonGenerator.writeNumberField("98th_percentile", convertDuration(snapshot.get98thPercentile()));
+			jsonGenerator.writeNumberField("99th_percentile", convertDuration(snapshot.get99thPercentile()));
+			jsonGenerator.writeNumberField("999th_percentile", convertDuration(snapshot.get999thPercentile()));
 
 			jsonGenerator.writeEndObject();
 			writeEndMetric(jsonGenerator);
