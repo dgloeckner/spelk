@@ -69,3 +69,9 @@ Update metrics.properties in [spark home]/conf/metrics.properties eg.
 **Run Kibana for testing**
 
 `docker run -e "ELASTICSEARCH_HOSTS=http://mbp:9200" -p 5601:5601 docker.elastic.co/kibana/kibana:7.4.2`
+
+# Kibana content
+
+There's exported Kibana content which contains some visualizations and dashboards in
+ `src/main/kibana/kibana-objects.ndjson`
+ You may import this content into Kibana via `Settings -> Saved Objects -> Import`.
