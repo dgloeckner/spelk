@@ -70,12 +70,17 @@ Update metrics.properties in [spark home]/conf/metrics.properties eg.
 
 `docker run -e "ELASTICSEARCH_HOSTS=http://mbp:9200" -p 5601:5601 docker.elastic.co/kibana/kibana:7.4.2`
 
-# Kibana content
+# Dockerized Kibana and Elasticsearch
 
-There's exported Kibana content which contains some visualizations and dashboards in
- `src/main/kibana/kibana-objects.ndjson`
- You may import this content into Kibana via `Settings -> Saved Objects -> Import`.
+There's a Docker compose file (`src/main/docker/docker-compose.yml`) which brings up Elasticsearch
+and Kibana. Kibana will be set up with Spark-related dashboards.
+
+````cd src/main/docker; docker-compose up````
  
  # REST interface for Elasticsearch index management
  * Listing indexes: `curl http://localhost:9200/_cat/indices`
- * Deleting an index by name: `curl -XDELETE http://localhost:9200/spark-2020-02-02`
+ * Deleting an index by name: `curl -XDELETE http://localhost:9200/spark-2020-02-02
+ 
+ # Exporting Kibana dashboards for Docker image customization
+ Save output to file:
+```curl -XGET "http://localhost:5601/api/kibana/dashboards/export?dashboard=$id"```
