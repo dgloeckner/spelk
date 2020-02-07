@@ -28,6 +28,7 @@ Spelk is built using [Apache Maven](http://maven.apache.org/). You can specify t
 
 To use Spelk you need to add the Spelk jar to the Spark driver/executor classpaths and enable the metrics sink.
 
+The latest release of Spelk is available on [GitHub](https://github.com/dgloeckner/spelk/releases/latest). 
 
 **Add Spelk jar to classpaths**
 
@@ -35,8 +36,6 @@ Update [spark home]/conf/spark-defaults.conf eg.
 
 	spark.driver.extraClassPath=<path to Spelk>/spelk-0.1.0.jar
 	spark.executor.extraClassPath=<path to Spelk>/spelk-0.1.0.jar
-
-
  
 **Enable the Elasticsearch sink**
 
