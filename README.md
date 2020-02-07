@@ -23,12 +23,14 @@ Spelk is built using [Apache Maven](http://maven.apache.org/). You can specify t
 
     mvn -Dspark.version=2.0.0 -Dscala.binary.version=2.11 clean package
 
+## Pre-build Spelk
+[![Build Status](https://travis-ci.com/dgloeckner/spelk.svg?branch=master)](https://travis-ci.com/dgloeckner/spelk)
+
+The latest release of Spelk is available on [GitHub](https://github.com/dgloeckner/spelk/releases/latest). 
 
 ## Configuration
 
 To use Spelk you need to add the Spelk jar to the Spark driver/executor classpaths and enable the metrics sink.
-
-The latest release of Spelk is available on [GitHub](https://github.com/dgloeckner/spelk/releases/latest). 
 
 **Add Spelk jar to classpaths**
 
