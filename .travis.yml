@@ -1,21 +1,19 @@
-# Travis CI Java documentation can be found in:
-# https://docs.travis-ci.com/user/languages/java/
-
-# We will use Ubuntu 18.04 (bionic beaver). List of options:
-# https://docs.travis-ci.com/user/reference/overview/#linux
 dist: xenial
-
-# This enables the 'defaults' to test java applications:
 language: java
-
-# We can specify a list of JDKs to be used for testing
-# A list of available JDKs in Trusty can be seed in:
-# https://docs.travis-ci.com/user/reference/xenial/#jvm-clojure-groovy-java-scala-support
 jdk:
-  - openjdk8
-
-# Each job in Travis CI has several steps:
-# https://docs.travis-ci.com/user/job-lifecycle/
-# The 'language: java' directive sets up sane defaults to test common java applications
-# We use the defaults for installing dependencies, compiling and testing maven applications
-# In our case it will be 'mvn install' followed by 'mvn test'
+- openjdk8
+before_deploy:
+  # Set up git user name and tag this commit
+  - git config --local user.name "dgloeckner"
+  - git config --local user.email "gloeckner.daniel@gmail.com"
+  - export TRAVIS_TAG=${TRAVIS_TAG:-$(date +'%Y%m%d%H%M%S')-$(git log --format=%h -1)}
+  - git tag $TRAVIS_TAG
+  - cd target
+deploy:
+  provider: releases
+  api_key:
+    secure: c3Hvs4ToP4lamS/yvgYt/gFPwylXsh7p2zMaGYIIZta3sJow+MPKzrzoS2nLB2lsrGF3R4AFgaiFTDRDMSN2UjonnTSzntt7LMPc37iTaR/Y08c2WbE55E+ZF1VeYWl64RHiK2favrc5Wp1gLuS3foe22YiBq+qIdz6SsPxkKhmv0Po+wagS68aZofKZPqLaiJS9qL0W2+NucUSW0piyzvPGiJ/7rbjDkBh/lDj1m4DLVOSTFpVjhr+CpLo0XjcqIWsrIXcBEJ1qRUN8rjzGSEExnGIWm85a5OCoqXuo3eZ7TfyJ+HziQVLpwIuAB0sTU9UhhPMaUMss/QT6mMH8gN1EBf/C+koIO3mQbZyb5oiQzqnBKHdbhLEQW20gNZfwyOvJlE5aC7a+rc8vo+rZFt3/3qxxmGePe3WruZyv5EQwX7N/DT/91J9MLglAugT1A0WWmMdGQg+LhMG/lvOMjtiC4awBnDuZnJCVSeyvaBL0fghKaT/6ypGwWwGGiuDDG3DaGFwgAsvN7Nj36whVuwAs+bVQtyYxRynrOFMEXg/RcNs6C78lDxAEecf/4im2WvPGo3GFJuoURQGo49fauYp8gZKi0SujHZHFiVCiFGGSGK2wxwfwGjZz+mnaT0/qHVI+EXr0llRu4RE6yuLW6JXM/m/lKgSbXoeB2yJct30=
+  file: spelk.jar
+  skip_cleanup: true
+  on:
+    repo: dgloeckner/spelk
