@@ -62,10 +62,6 @@ Update metrics.properties in [spark home]/conf/metrics.properties eg.
 	*.sink.elk.unit=seconds
 	# Optional path of Elasticsearch API ("http://host:port/path/...")
 	# *.sink.elk.path=test
-.
-**Run Elasticsearch for testing**
-
-`docker run -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" docker.elastic.co/elasticsearch/elasticsearch:7.4.1`
 
 **Run Kibana for testing**
 
@@ -85,3 +81,23 @@ and Kibana. Kibana will be set up with Spark-related dashboards.
  # Exporting Kibana dashboards for Docker image customization
  Save output to file:
 ```curl -XGET "http://localhost:5601/api/kibana/dashboards/export?dashboard=$id"```
+
+# Dockerized Spark
+A dockerized Spark cluster with the following features is provided
+* Version of Spark and Hadoop can be configured through ``src/main/docker/.env``
+* Master, worker and history server are configured and started automatically
+* Data and code can be provided to the Spark cluster via Docker mounts. See compose file for examples.
+* Spark master, worker and Spark shell are configured for reporting to Elasticsearch
+
+Running the whole cluster is as easy as
+
+````cd src/main/docker; docker-compose -f docker-compose-spark-cluster.yml up````
+
+Once the cluster is up, you can start a Spark shell
+
+```
+docker exec -it docker_spark_1 /spark/bin/spark-shell
+```
+
+Pointing your (local) Spark installations to your dockerized Spark cluster is easy, just set the
+master URL to ``spark://localhost:7077``

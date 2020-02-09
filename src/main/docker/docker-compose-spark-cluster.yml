@@ -1,5 +1,5 @@
 version: "3.2"
-
+# Brings up a spark cluster (master, worker, history server) which feeds metrics into Elasticsearch
 services:
   spark:
     build:
@@ -8,6 +8,18 @@ services:
         SPARK_VERSION: $SPARK_VERSION
         HADOOP_VERSION: $HADOOP_VERSION
         HADOOP_MINOR_VERSION: $HADOOP_MINOR_VERSION
+    volumes:
+    # Volume to share data
+    - '/tmp/data:/data'
+    ports:
+      # Spark master port
+      - "7077:7077"
+      # History server web UI
+      - "18080:18080"
+      # Spark master web UI
+      - "8080:8080"
+      # Spark worker web UI
+      - "8081:8081"
     networks:
       - elk
 

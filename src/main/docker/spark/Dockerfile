@@ -39,7 +39,7 @@ ADD spark-defaults.conf.template /spark/conf
 RUN envsubst < /spark/conf/spark-defaults.conf.template > /spark/conf/spark-defaults.conf
 
 # Add Spelk
-RUN wget -P /spark/jars/ https://github.com/dgloeckner/spelk/releases/download/20200207213226-0e007e0/spelk.jar
+RUN wget -P /spark/jars/ https://github.com/dgloeckner/spelk/releases/download/v0.1/spelk.jar
 ADD metrics.properties /spark/conf
 
 # Dev tools
@@ -55,6 +55,10 @@ RUN mkdir /code
 # Can be mounted to a directory on the Host OS --volume=/local/code/dir:/code
 VOLUME /code
 WORKDIR /code
+
+# Same for sharing data
+RUN mkdir /data
+VOLUME /data
 
 # Expose Spark ports
 EXPOSE 18080 7077 8080 8081
