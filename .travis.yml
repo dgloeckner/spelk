@@ -3,11 +3,6 @@ language: java
 jdk:
 - openjdk8
 before_deploy:
-  # Set up git user name and tag this commit
-  - git config --local user.name "dgloeckner"
-  - git config --local user.email "gloeckner.daniel@gmail.com"
-  - export TRAVIS_TAG=${TRAVIS_TAG:-$(date +'%Y%m%d%H%M%S')-$(git log --format=%h -1)}
-  - git tag $TRAVIS_TAG
   - cd target
 deploy:
   provider: releases
@@ -17,3 +12,4 @@ deploy:
   skip_cleanup: true
   on:
     repo: dgloeckner/spelk
+    tags: true
