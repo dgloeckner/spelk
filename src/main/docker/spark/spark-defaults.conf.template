@@ -1,0 +1,6 @@
+spark.eventLog.enabled           true
+spark.eventLog.dir               /spark/eventlog
+spark.history.fs.logDirectory    /spark/eventlog
+spark.driver.memory              $SPARK_DRIVER_MEMORY
+spark.executor.extraJavaOptions  $SPARK_DRIVER_EXTRA_JAVA_OPTIONS
+spark.master                     spark://localhost:7077

@@ -1,0 +1,16 @@
+version: "3.2"
+
+services:
+  spark:
+    build:
+      context: spark/
+      args:
+        SPARK_VERSION: $SPARK_VERSION
+        HADOOP_VERSION: $HADOOP_VERSION
+        HADOOP_MINOR_VERSION: $HADOOP_MINOR_VERSION
+    networks:
+      - elk
+
+networks:
+  elk:
+    driver: bridge
